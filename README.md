@@ -1,5 +1,5 @@
-## Cisco Macro Tool PowerShell
-The Cisco Macro Tool PowerShell is a script-based tool designed to manage macros on Cisco systems. The tool offers three primary functions: uploading Pexip OTJ macros, uploading .js macros, and removing macros. Each function generates logs to help you keep track of operations and any issues that may arise.
+## Cisco Macro Tool For PowerShell
+The Cisco Macro Tool For PowerShell is a script-based tool designed to manage macros on Cisco systems. The tool offers three primary functions: uploading Pexip OTJ macros, uploading .js macros, and removing macros. Each function generates logs to help you keep track of operations and any issues that may arise.
 
 ## Features
 - Upload Pexip OTJ macros: Upload and manage Pexip OTJ macros from ZIP files.
@@ -16,9 +16,9 @@ The Cisco Macro Tool PowerShell is a script-based tool designed to manage macros
 ## Installation
 Clone the repository:
 
-git clone https://github.com/JOsh-Estrada/Cisco-Macro-Tool-PowerShell.git
+git clone https://github.com/Josh-Estrada/Cisco-Macro-Tool-For-PowerShell.git
 
-cd Cisco-Macro-Tool-PowerShell
+cd Cisco-Macro-Tool-For-PowerShell
 
 ## Usage
 Run the main script to access the three primary functions:
