@@ -34,9 +34,19 @@ $macrosToRemove = Read-Host "Please enter the macros to remove (comma separated)
 $macrosToRemoveArray = $macrosToRemove -split ',' | ForEach-Object { $_.Trim() }
 
 # Import CSV
-$systems = Import-Csv -Path $csvFilePath
-Display-Message "Found $($systems.Count) systems in the CSV file."
-Log-Message -message "Found $($systems.Count) systems in the CSV file." -logFile $logFile
+try {
+    $systems = @(Import-Csv -Path $csvFilePath) # Convert to array
+    if ($systems -eq $null -or $systems.Count -eq 0) {
+        throw "CSV file is empty or improperly formatted."
+    }
+    Display-Message "Found $($systems.Count) systems in the CSV file."
+    Log-Message -message "Found $($systems.Count) systems in the CSV file." -logFile $logFile
+} catch {
+    $errorDetails = $_.Exception.Message
+    Display-Message "Error importing CSV file. Response: $errorDetails"
+    Log-Message -message "Error importing CSV file. Response: $errorDetails" -logFile $logFile
+    return
+}
 
 # Confirm removal
 if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the removal?")) {
@@ -44,6 +54,19 @@ if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the remov
     Log-Message -message "Removal cancelled." -logFile $logFile
     return
 }
+
+# Bypass SSL certificate validation
+Add-Type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
+[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
 # Function to get macros from a system
 function Get-Macros {
@@ -73,7 +96,7 @@ function Get-Macros {
 "@
 
     try {
-        $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
         [xml]$xmlResponse = $response
         $macros = $xmlResponse.Command.MacroGetResult.Macro | ForEach-Object { $_.Name }
         $message = "Macros on ${endpointIp}: $($macros -join ', ')"
@@ -120,7 +143,7 @@ function Remove-Macro {
 "@
 
     try {
-        $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
         $message = "Macro $macroName removed successfully from ${endpointIp}."
         Display-Message $message
         Log-Message -message $message -logFile $logFile

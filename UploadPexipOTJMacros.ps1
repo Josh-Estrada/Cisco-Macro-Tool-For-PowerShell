@@ -64,6 +64,19 @@ if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the uploa
     return
 }
 
+# Bypass SSL certificate validation
+Add-Type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
+[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+
 # Function to upload macros from a ZIP file
 function Upload-MacroFromZip {
     param (
@@ -78,7 +91,7 @@ function Upload-MacroFromZip {
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
-    $tempDir = Join-Path -Path $env:TMPDIR -ChildPath ([System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetRandomFileName()))
+    $tempDir = Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetRandomFileName()))
     New-Item -ItemType Directory -Path $tempDir | Out-Null
 
     try {
@@ -93,13 +106,15 @@ function Upload-MacroFromZip {
             $headers.Add("Content-Type", "application/xml")
             $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
 
+            $encodedJsCode = [System.Security.SecurityElement]::Escape($jsCode)
+
             $body = @"
 <Command>
     <Macros>
         <Macro>
             <Save command="True">
                 <name>$macroName</name>
-                <body><![CDATA[$jsCode]]></body>
+                <body>$encodedJsCode</body>
                 <overWrite>True</overWrite>
                 <Transpile>False</Transpile>
             </Save>
@@ -109,10 +124,14 @@ function Upload-MacroFromZip {
 "@
 
             try {
-                $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+                $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
                 $message = "Macro $macroName uploaded successfully to $endpointIp from $zipFilePath."
                 Display-Message $message
                 Log-Message -message $message -logFile $logFile
+                
+                # Enable the uploaded macro
+                Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile
+                
             } catch {
                 $errorDetails = $_.Exception.Message
                 $message = "Error uploading macro $macroName to: $endpointIp from $zipFilePath. Response: $errorDetails"
@@ -127,6 +146,49 @@ function Upload-MacroFromZip {
         Log-Message -message $message -logFile $logFile
     } finally {
         Remove-Item -Recurse -Force -Path $tempDir
+    }
+}
+
+# Function to enable a macro on a system
+function Enable-Macro {
+    param (
+        [string]$endpointIp,
+        [string]$username,
+        [string]$password,
+        [string]$macroName,
+        [string]$logFile
+    )
+
+    $message = "Attempting to enable macro $macroName on $endpointIp..."
+    Display-Message $message
+    Log-Message -message $message -logFile $logFile
+
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Content-Type", "application/xml")
+    $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+
+    $body = @"
+<Command>
+    <Macros>
+        <Macro>
+            <Activate>
+                <name>$macroName</name>
+            </Activate>
+        </Macro>
+    </Macros>
+</Command>
+"@
+
+    try {
+        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
+        $message = "Macro $macroName enabled successfully on $endpointIp."
+        Display-Message $message
+        Log-Message -message $message -logFile $logFile
+    } catch {
+        $errorDetails = $_.Exception.Message
+        $message = "Error enabling macro $macroName on $endpointIp. Response: $errorDetails"
+        Display-Message $message
+        Log-Message -message $message -logFile $logFile
     }
 }
 
@@ -158,7 +220,7 @@ function Restart-MacroRuntime {
 "@
 
     try {
-        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
         $message = "Macro runtime restarted successfully on $endpointIp."
         Display-Message $message
         Log-Message -message $message -logFile $logFile

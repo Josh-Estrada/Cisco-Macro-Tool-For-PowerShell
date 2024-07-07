@@ -38,9 +38,24 @@ Display-Message "Found $($jsFiles.Count) .js files in the directory."
 Log-Message -message "Found $($jsFiles.Count) .js files in the directory." -logFile $logFile
 
 # Import CSV
-$systems = Import-Csv -Path $csvFilePath
-Display-Message "Found $($systems.Count) systems in the CSV file."
-Log-Message -message "Found $($systems.Count) systems in the CSV file." -logFile $logFile
+try {
+    $systems = @(Import-Csv -Path $csvFilePath) # Convert to array
+    if ($systems -eq $null -or $systems.Count -eq 0) {
+        throw "CSV file is empty or improperly formatted."
+    }
+    Display-Message "Found $($systems.Count) systems in the CSV file."
+    Log-Message -message "Found $($systems.Count) systems in the CSV file." -logFile $logFile
+} catch {
+    $errorDetails = $_.Exception.Message
+    Display-Message "Error importing CSV file. Response: $errorDetails"
+    Log-Message -message "Error importing CSV file. Response: $errorDetails" -logFile $logFile
+    return
+}
+
+# Debug logging for CSV content
+foreach ($system in $systems) {
+    Log-Message -message "System: $($system | Out-String)" -logFile $logFile
+}
 
 # Confirm upload
 if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the upload?")) {
@@ -48,6 +63,19 @@ if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the uploa
     Log-Message -message "Upload cancelled." -logFile $logFile
     return
 }
+
+# Bypass SSL certificate validation
+Add-Type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
+[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
 # Function to upload macros from a .js file
 function Upload-MacroFromJs {
@@ -59,24 +87,23 @@ function Upload-MacroFromJs {
         [string]$logFile
     )
 
-    $message = "Attempting to upload macro from $jsFilePath to $endpointIp..."
-    Display-Message $message
-    Log-Message -message $message -logFile $logFile
-
     $macroName = [System.IO.Path]::GetFileNameWithoutExtension($jsFilePath)
-    $jsCode = Get-Content -Path $jsFilePath -Raw
+    $jsCode = Get-Content -Path $jsFilePath -Raw  # Read file content without modification
 
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/xml")
-    $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+    $headers = @{
+        "Content-Type"  = "application/xml"
+        "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+    }
 
-    $body = @"
+    $encodedJsCode = [System.Security.SecurityElement]::Escape($jsCode)
+
+    $bodyTemplate = @"
 <Command>
     <Macros>
         <Macro>
             <Save command="True">
-                <name>$macroName</name>
-                <body><![CDATA[$jsCode]]></body>
+                <name>{0}</name>
+                <body>{1}</body>
                 <overWrite>True</overWrite>
                 <Transpile>False</Transpile>
             </Save>
@@ -85,18 +112,80 @@ function Upload-MacroFromJs {
 </Command>
 "@
 
+    $body = [string]::Format($bodyTemplate, $macroName, $encodedJsCode)
+    $bodyBytes = [Text.Encoding]::UTF8.GetBytes($body)
+
+    $headers["Content-Length"] = $bodyBytes.Length
+
+    # Log the payload for debugging
+    $payloadLogFile = "PayloadLog.txt"
+    Log-Message -message "Uploading macro from $jsFilePath to $endpointIp. Payload: $body" -logFile $payloadLogFile
+
+    $message = "Attempting to upload macro from $jsFilePath to $endpointIp..."
+    Display-Message $message
+    Log-Message -message $message -logFile $logFile
+
     try {
-        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $bodyBytes -TimeoutSec 10
         $message = "Macro $macroName uploaded successfully to $endpointIp from $jsFilePath."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
+
+        # Enable the uploaded macro
+        Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile
+
         return $true
     } catch {
         $errorDetails = $_.Exception.Message
         $message = "Error uploading macro $macroName to: $endpointIp from $jsFilePath. Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
+        Log-Message -message $errorDetails -logFile $payloadLogFile
         return $false
+    }
+}
+
+# Function to enable a macro on a system
+function Enable-Macro {
+    param (
+        [string]$endpointIp,
+        [string]$username,
+        [string]$password,
+        [string]$macroName,
+        [string]$logFile
+    )
+
+    $message = "Attempting to enable macro $macroName on $endpointIp..."
+    Display-Message $message
+    Log-Message -message $message -logFile $logFile
+
+    $headers = @{
+        "Content-Type"  = "application/xml"
+        "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+    }
+
+    $body = @"
+<Command>
+    <Macros>
+        <Macro>
+            <Activate>
+                <name>$macroName</name>
+            </Activate>
+        </Macro>
+    </Macros>
+</Command>
+"@
+
+    try {
+        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
+        $message = "Macro $macroName enabled successfully on $endpointIp."
+        Display-Message $message
+        Log-Message -message $message -logFile $logFile
+    } catch {
+        $errorDetails = $_.Exception.Message
+        $message = "Error enabling macro $macroName on $endpointIp. Response: $errorDetails"
+        Display-Message $message
+        Log-Message -message $message -logFile $logFile
     }
 }
 
@@ -113,9 +202,10 @@ function Restart-MacroRuntime {
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/xml")
-    $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+    $headers = @{
+        "Content-Type"  = "application/xml"
+        "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+    }
 
     $body = @"
 <Command>
@@ -128,7 +218,7 @@ function Restart-MacroRuntime {
 "@
 
     try {
-        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -SkipCertificateCheck -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
         $message = "Macro runtime restarted successfully on $endpointIp."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
