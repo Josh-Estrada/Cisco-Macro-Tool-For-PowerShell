@@ -14,6 +14,7 @@ The Cisco Macro Tool For PowerShell is a script-based tool designed to manage ma
 - PowerShell Core (pwsh) installed on your machine.
 - Windows only. MacOS not supported at this time.
 - Cisco systems with administrative access.
+- Direct network connectivity to the Cisco systems over port 443
 - CSV file with the following headers: system name, ip address, username, password.
 - A CSV template is provided in the repository.
 - Macro files in .js format or Pexip OTJ macros in a ZIP directory.
