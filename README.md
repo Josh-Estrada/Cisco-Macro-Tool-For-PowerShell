@@ -20,14 +20,13 @@ The Cisco Macro Tool For PowerShell is a script-based tool designed to manage ma
 - Macro files in .js format or Pexip OTJ macros in a ZIP directory.
 
 ## Installation
-Clone the repository:
-
-git clone https://github.com/Josh-Estrada/Cisco-Macro-Tool-For-PowerShell.git
-
-cd Cisco-Macro-Tool-For-PowerShell
+- Clone the repository:
+- git clone https://github.com/Josh-Estrada/Cisco-Macro-Tool-For-PowerShell.git
+- The repo consists of mutliple ps1 scripts perform the various fucntions, but you only need to run the MainMenu.ps1
+- Change directory to where you downloaded the repo. cd Cisco-Macro-Tool-For-PowerShell
 
 ## Usage
-Run the main script to access the functions:
+Run the MainMenu.ps1 script to launch the tool.:
 
 pwsh ./MainMenu.ps1
 You will be presented with a menu to choose from:
