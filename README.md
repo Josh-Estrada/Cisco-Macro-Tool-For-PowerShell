@@ -40,7 +40,7 @@ Choose an option:
 Enter your choice (1, 2, 3, 4, 5, 6):
 
 ## Detailed Steps
-1. Upload Pexip OTJ macros
+## 1. Upload Pexip OTJ macros
 Enter the path to your CSV file and the directory containing the Pexip OTJ ZIP files. Review the number of matching and non-matching systems, and confirm to proceed with the upload.
 
 ## How It Works:
@@ -53,6 +53,7 @@ Enter the path to your CSV file and the directory containing the Pexip OTJ ZIP f
   systems.
 - Log File: UploadPexipOTJMacros.log
 
+
 ## 2. Upload .js macros
 Enter the path to your CSV file and the directory containing the .js files. Review the number of .js files found and the number of systems in the CSV file, and confirm to proceed with the upload.
 
@@ -62,6 +63,7 @@ Enter the path to your CSV file and the directory containing the .js files. Revi
 - Confirm the upload.
 - The tool iterates through the CSV and uploads all macros to all systems.
 - Log File: UploadJsMacros.log
+
 
 ## 3. Remove macros
 Enter the path to your CSV file and specify the macros to remove (comma-separated). Review the number of systems found in the CSV file, and confirm to proceed with the removal.
@@ -74,6 +76,7 @@ Enter the path to your CSV file and specify the macros to remove (comma-separate
 - The tool iterates through the CSV and removes all specified macros from all systems.
 - Log File: RemoveMacros.log
 
+
 ## 4. Check macros on a specific system
 Enter the IP address or hostname of the specific system to check. The tool will display the list of installed macros on that system.
 
@@ -82,6 +85,7 @@ Enter the IP address or hostname of the specific system to check. The tool will 
 - Enter the system's IP address or hostname.
 - The tool retrieves and displays the list of macros installed on the specified system.
 - Log File: CheckMacrosOnSystem.log
+
 
 ## 5. Check macros on all systems
 Enter the path to your CSV file. The tool will display the list of installed macros on all systems in the CSV.
@@ -94,6 +98,7 @@ Enter the path to your CSV file. The tool will display the list of installed mac
 - Logging
 - Each function generates a log file in the same directory as the script. The log files contain detailed information about the operations performed, including 
   successful and failed attempts.
+
 
 ## Logging
 UploadPexipOTJMacros.log: Logs for uploading Pexip OTJ macros.
