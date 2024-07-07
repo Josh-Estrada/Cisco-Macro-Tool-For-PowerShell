@@ -104,11 +104,11 @@ Enter the path to your CSV file. The tool will display the list of installed mac
 Exits the Main script and macro tool.
 
 ## Logging
-UploadPexipOTJMacros.log: Logs for uploading Pexip OTJ macros.
-UploadJsMacros.log: Logs for uploading .js macros.
-RemoveMacros.log: Logs for removing macros.
-CheckMacrosOnSystem.log: Logs for checking macros on a specific system.
-CheckMacrosOnAllSystems.log: Logs for checking macros on all systems.
+- UploadPexipOTJMacros.log: Logs for uploading Pexip OTJ macros.
+- UploadJsMacros.log: Logs for uploading .js macros.
+- RemoveMacros.log: Logs for removing macros.
+- CheckMacrosOnSystem.log: Logs for checking macros on a specific system.
+- CheckMacrosOnAllSystems.log: Logs for checking macros on all systems.
 
 ## Contributing
 Feel free to submit issues and pull requests to improve the tool.
