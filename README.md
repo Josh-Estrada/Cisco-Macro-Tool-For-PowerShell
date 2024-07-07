@@ -22,7 +22,7 @@ The Cisco Macro Tool For PowerShell is a script-based tool designed to manage ma
 ## Installation
 - Clone the repository:
 - git clone https://github.com/Josh-Estrada/Cisco-Macro-Tool-For-PowerShell.git
-- The repo consists of mutliple ps1 scripts perform the various fucntions, but you only need to run the MainMenu.ps1
+- The repo consists of mutliple ps1 scripts that perform the various fucntions, but you only need to run the MainMenu.ps1
 - Change directory to where you downloaded the repo. cd Cisco-Macro-Tool-For-PowerShell
 
 ## Usage
@@ -100,6 +100,8 @@ Enter the path to your CSV file. The tool will display the list of installed mac
 - Each function generates a log file in the same directory as the script. The log files contain detailed information about the operations performed, including 
   successful and failed attempts.
 
+## 6. Exit
+Exits the Main script and macro tool.
 
 ## Logging
 UploadPexipOTJMacros.log: Logs for uploading Pexip OTJ macros.
