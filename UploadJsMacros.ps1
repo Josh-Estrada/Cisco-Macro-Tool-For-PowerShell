@@ -52,11 +52,6 @@ try {
     return
 }
 
-# Debug logging for CSV content
-foreach ($system in $systems) {
-    Log-Message -message "System: $($system | Out-String)" -logFile $logFile
-}
-
 # Confirm upload
 if (-not (Get-Confirmation -promptMessage "Do you want to proceed with the upload?")) {
     Display-Message "Upload cancelled."
@@ -84,7 +79,8 @@ function Upload-MacroFromJs {
         [string]$username,
         [string]$password,
         [string]$jsFilePath,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
     $macroName = [System.IO.Path]::GetFileNameWithoutExtension($jsFilePath)
@@ -117,30 +113,25 @@ function Upload-MacroFromJs {
 
     $headers["Content-Length"] = $bodyBytes.Length
 
-    # Log the payload for debugging
-    $payloadLogFile = "PayloadLog.txt"
-    Log-Message -message "Uploading macro from $jsFilePath to $endpointIp. Payload: $body" -logFile $payloadLogFile
-
-    $message = "Attempting to upload macro from $jsFilePath to $endpointIp..."
+    $message = "Attempting to upload macro from $jsFilePath to $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
     try {
         $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $bodyBytes -TimeoutSec 10
-        $message = "Macro $macroName uploaded successfully to $endpointIp from $jsFilePath."
+        $message = "Macro $macroName uploaded successfully to $endpointIp ($systemName) from $jsFilePath."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
 
         # Enable the uploaded macro
-        Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile
+        Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile -systemName $systemName
 
         return $true
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error uploading macro $macroName to: $endpointIp from $jsFilePath. Response: $errorDetails"
+        $message = "Error uploading macro $macroName to: $endpointIp ($systemName) from $jsFilePath. Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
-        Log-Message -message $errorDetails -logFile $payloadLogFile
         return $false
     }
 }
@@ -152,10 +143,11 @@ function Enable-Macro {
         [string]$username,
         [string]$password,
         [string]$macroName,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to enable macro $macroName on $endpointIp..."
+    $message = "Attempting to enable macro $macroName on $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -178,12 +170,12 @@ function Enable-Macro {
 
     try {
         $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-        $message = "Macro $macroName enabled successfully on $endpointIp."
+        $message = "Macro $macroName enabled successfully on $endpointIp ($systemName)."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error enabling macro $macroName on $endpointIp. Response: $errorDetails"
+        $message = "Error enabling macro $macroName on $endpointIp ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     }
@@ -195,10 +187,11 @@ function Restart-MacroRuntime {
         [string]$endpointIp,
         [string]$username,
         [string]$password,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to restart macro runtime on $endpointIp..."
+    $message = "Attempting to restart macro runtime on $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -219,12 +212,12 @@ function Restart-MacroRuntime {
 
     try {
         $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-        $message = "Macro runtime restarted successfully on $endpointIp."
+        $message = "Macro runtime restarted successfully on $endpointIp ($systemName)."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error restarting macro runtime on $endpointIp. Response: $errorDetails"
+        $message = "Error restarting macro runtime on $endpointIp ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     }
@@ -234,19 +227,21 @@ function Restart-MacroRuntime {
 $uploadSummary = @()
 
 foreach ($system in $systems) {
+    $systemName = $system.'system name'
     $ipAddress = $system.'ip address'
     $username = $system.'username'
     $password = $system.'password'
 
     $systemSummary = [PSCustomObject]@{
         IPAddress = $ipAddress
+        SystemName = $systemName
         TotalFiles = $jsFiles.Count
         SuccessfulUploads = 0
         FailedUploads = 0
     }
 
     foreach ($jsFile in $jsFiles) {
-        $success = Upload-MacroFromJs -endpointIp $ipAddress -username $username -password $password -jsFilePath $jsFile.FullName -logFile $logFile
+        $success = Upload-MacroFromJs -endpointIp $ipAddress -username $username -password $password -jsFilePath $jsFile.FullName -logFile $logFile -systemName $systemName
         if ($success) {
             $systemSummary.SuccessfulUploads++
         } else {
@@ -255,7 +250,7 @@ foreach ($system in $systems) {
     }
 
     if ($systemSummary.SuccessfulUploads -gt 0) {
-        Restart-MacroRuntime -endpointIp $ipAddress -username $username -password $password -logFile $logFile
+        Restart-MacroRuntime -endpointIp $ipAddress -username $username -password $password -logFile $logFile -systemName $systemName
     }
 
     $uploadSummary += $systemSummary

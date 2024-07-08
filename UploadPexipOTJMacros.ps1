@@ -84,10 +84,11 @@ function Upload-MacroFromZip {
         [string]$username,
         [string]$password,
         [string]$zipFilePath,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to upload macros from $zipFilePath to $endpointIp..."
+    $message = "Attempting to upload macros from $zipFilePath to $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -102,9 +103,10 @@ function Upload-MacroFromZip {
             $macroName = [System.IO.Path]::GetFileNameWithoutExtension($jsFile.Name)
             $jsCode = Get-Content -Path $jsFile.FullName -Raw
 
-            $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-            $headers.Add("Content-Type", "application/xml")
-            $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+            $headers = @{
+                "Content-Type"  = "application/xml"
+                "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+            }
 
             $encodedJsCode = [System.Security.SecurityElement]::Escape($jsCode)
 
@@ -125,16 +127,16 @@ function Upload-MacroFromZip {
 
             try {
                 $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-                $message = "Macro $macroName uploaded successfully to $endpointIp from $zipFilePath."
+                $message = "Macro $macroName uploaded successfully to $endpointIp ($systemName) from $zipFilePath."
                 Display-Message $message
                 Log-Message -message $message -logFile $logFile
                 
                 # Enable the uploaded macro
-                Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile
+                Enable-Macro -endpointIp $endpointIp -username $username -password $password -macroName $macroName -logFile $logFile -systemName $systemName
                 
             } catch {
                 $errorDetails = $_.Exception.Message
-                $message = "Error uploading macro $macroName to: $endpointIp from $zipFilePath. Response: $errorDetails"
+                $message = "Error uploading macro $macroName to: $endpointIp ($systemName) from $zipFilePath. Response: $errorDetails"
                 Display-Message $message
                 Log-Message -message $message -logFile $logFile
             }
@@ -156,16 +158,18 @@ function Enable-Macro {
         [string]$username,
         [string]$password,
         [string]$macroName,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to enable macro $macroName on $endpointIp..."
+    $message = "Attempting to enable macro $macroName on $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/xml")
-    $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+    $headers = @{
+        "Content-Type"  = "application/xml"
+        "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+    }
 
     $body = @"
 <Command>
@@ -181,12 +185,12 @@ function Enable-Macro {
 
     try {
         $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-        $message = "Macro $macroName enabled successfully on $endpointIp."
+        $message = "Macro $macroName enabled successfully on $endpointIp ($systemName)."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error enabling macro $macroName on $endpointIp. Response: $errorDetails"
+        $message = "Error enabling macro $macroName on $endpointIp ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     }
@@ -198,16 +202,18 @@ function Restart-MacroRuntime {
         [string]$endpointIp,
         [string]$username,
         [string]$password,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to restart macro runtime on $endpointIp..."
+    $message = "Attempting to restart macro runtime on $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/xml")
-    $headers.Add("Authorization", "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}")))
+    $headers = @{
+        "Content-Type"  = "application/xml"
+        "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+    }
 
     $body = @"
 <Command>
@@ -221,12 +227,12 @@ function Restart-MacroRuntime {
 
     try {
         $response = Invoke-RestMethod -Uri "https://$endpointIp/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-        $message = "Macro runtime restarted successfully on $endpointIp."
+        $message = "Macro runtime restarted successfully on $endpointIp ($systemName)."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error restarting macro runtime on $endpointIp. Response: $errorDetails"
+        $message = "Error restarting macro runtime on $endpointIp ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     }
@@ -237,8 +243,8 @@ $uploadedSystems = 0
 
 foreach ($system in $matchingSystems) {
     foreach ($zipFile in $system.ZipFile) {
-        Upload-MacroFromZip -endpointIp $system.IPAddress -username $system.Username -password $system.Password -zipFilePath $zipFile.FullName -logFile $logFile
-        Restart-MacroRuntime -endpointIp $system.IPAddress -username $system.Username -password $system.Password -logFile $logFile
+        Upload-MacroFromZip -endpointIp $system.IPAddress -username $system.Username -password $system.Password -zipFilePath $zipFile.FullName -logFile $logFile -systemName $system.SystemName
+        Restart-MacroRuntime -endpointIp $system.IPAddress -username $system.Username -password $system.Password -logFile $logFile -systemName $system.SystemName
         $uploadedSystems++
     }
 }
