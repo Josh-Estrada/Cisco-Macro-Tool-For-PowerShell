@@ -18,6 +18,7 @@ The Cisco Macro Tool For PowerShell is a script-based tool designed to manage ma
 - CSV file with the following headers: system name, ip address, username, password.
 - A CSV template is provided in the repository.
 - Macro files in .js format or Pexip OTJ macros in a ZIP directory.
+- By default, the scripts will bypass certificate validaiton to remove any issues that may arise with self-signed certs. If you require certificate vlaidation the script can be modified.
 
 ## Installation
 - Clone the repository:
