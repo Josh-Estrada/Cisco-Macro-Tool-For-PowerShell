@@ -45,7 +45,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
-# Function to get macros from a system
+# Function to get macros from a single system
 function Get-Macros {
     param (
         [string]$endpointIp,

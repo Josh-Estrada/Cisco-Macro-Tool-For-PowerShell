@@ -35,7 +35,7 @@ $macrosToRemoveArray = $macrosToRemove -split ',' | ForEach-Object { $_.Trim() }
 
 # Import CSV
 try {
-    $systems = @(Import-Csv -Path $csvFilePath) # Convert to array
+    $systems = @(Import-Csv -Path $csvFilePath) 
     if ($systems -eq $null -or $systems.Count -eq 0) {
         throw "CSV file is empty or improperly formatted."
     }
@@ -74,10 +74,11 @@ function Get-Macros {
         [string]$endpointIp,
         [string]$username,
         [string]$password,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to get macros from $endpointIp..."
+    $message = "Attempting to get macros from $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -99,13 +100,13 @@ function Get-Macros {
         $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
         [xml]$xmlResponse = $response
         $macros = $xmlResponse.Command.MacroGetResult.Macro | ForEach-Object { $_.Name }
-        $message = "Macros on ${endpointIp}: $($macros -join ', ')"
+        $message = "Macros on ${endpointIp} ($systemName): $($macros -join ', ')"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
         return $macros
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error getting macros from ${endpointIp}. Response: $errorDetails"
+        $message = "Error getting macros from ${endpointIp} ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
         return @()
@@ -119,10 +120,11 @@ function Remove-Macro {
         [string]$username,
         [string]$password,
         [string]$macroName,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to remove macro $macroName from ${endpointIp}..."
+    $message = "Attempting to remove macro $macroName from ${endpointIp} ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -144,13 +146,13 @@ function Remove-Macro {
 
     try {
         $response = Invoke-RestMethod -Uri "https://${endpointIp}/putxml" -Method 'POST' -Headers $headers -Body $body -TimeoutSec 10
-        $message = "Macro $macroName removed successfully from ${endpointIp}."
+        $message = "Macro $macroName removed successfully from ${endpointIp} ($systemName)."
         Display-Message $message
         Log-Message -message $message -logFile $logFile
         return $true
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error removing macro $macroName from ${endpointIp}. Response: $errorDetails"
+        $message = "Error removing macro $macroName from ${endpointIp} ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
         return $false
@@ -161,14 +163,16 @@ function Remove-Macro {
 $removalSummary = @()
 
 foreach ($system in $systems) {
+    $systemName = $system.'system name'
     $ipAddress = $system.'ip address'
     $username = $system.'username'
     $password = $system.'password'
 
-    $macros = Get-Macros -endpointIp $ipAddress -username $username -password $password -logFile $logFile
+    $macros = Get-Macros -endpointIp $ipAddress -username $username -password $password -logFile $logFile -systemName $systemName
 
     $systemSummary = [PSCustomObject]@{
         IPAddress = $ipAddress
+        SystemName = $systemName
         TotalMacros = $macrosToRemoveArray.Count
         SuccessfulRemovals = 0
         FailedRemovals = 0
@@ -176,14 +180,14 @@ foreach ($system in $systems) {
 
     foreach ($macro in $macrosToRemoveArray) {
         if ($macros -contains $macro) {
-            $success = Remove-Macro -endpointIp $ipAddress -username $username -password $password -macroName $macro -logFile $logFile
+            $success = Remove-Macro -endpointIp $ipAddress -username $username -password $password -macroName $macro -logFile $logFile -systemName $systemName
             if ($success) {
                 $systemSummary.SuccessfulRemovals++
             } else {
                 $systemSummary.FailedRemovals++
             }
         } else {
-            $message = "Macro $macro not found on ${ipAddress}."
+            $message = "Macro $macro not found on ${ipAddress} ($systemName)."
             Display-Message $message
             Log-Message -message $message -logFile $logFile
             $systemSummary.FailedRemovals++

@@ -238,7 +238,7 @@ function Restart-MacroRuntime {
     }
 }
 
-# Perform the upload and restart macro runtime
+# Perform the upload and restart macro runtimes
 $uploadedSystems = 0
 
 foreach ($system in $matchingSystems) {

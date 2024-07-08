@@ -39,7 +39,7 @@ Log-Message -message "Found $($jsFiles.Count) .js files in the directory." -logF
 
 # Import CSV
 try {
-    $systems = @(Import-Csv -Path $csvFilePath) # Convert to array
+    $systems = @(Import-Csv -Path $csvFilePath)
     if ($systems -eq $null -or $systems.Count -eq 0) {
         throw "CSV file is empty or improperly formatted."
     }
@@ -84,7 +84,7 @@ function Upload-MacroFromJs {
     )
 
     $macroName = [System.IO.Path]::GetFileNameWithoutExtension($jsFilePath)
-    $jsCode = Get-Content -Path $jsFilePath -Raw  # Read file content without modification
+    $jsCode = Get-Content -Path $jsFilePath -Raw
 
     $headers = @{
         "Content-Type"  = "application/xml"

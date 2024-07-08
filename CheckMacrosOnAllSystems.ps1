@@ -31,7 +31,7 @@ $csvFilePath = Get-FilePath -promptMessage "Please enter the full path to the CS
 
 # Import CSV
 try {
-    $systems = @(Import-Csv -Path $csvFilePath) # Convert to array
+    $systems = @(Import-Csv -Path $csvFilePath)
     if ($systems -eq $null -or $systems.Count -eq 0) {
         throw "CSV file is empty or improperly formatted."
     }
@@ -70,10 +70,11 @@ function Get-Macros {
         [string]$endpointIp,
         [string]$username,
         [string]$password,
-        [string]$logFile
+        [string]$logFile,
+        [string]$systemName
     )
 
-    $message = "Attempting to get macros from $endpointIp..."
+    $message = "Attempting to get macros from $endpointIp ($systemName)..."
     Display-Message $message
     Log-Message -message $message -logFile $logFile
 
@@ -96,15 +97,15 @@ function Get-Macros {
         [xml]$xmlResponse = $response
         $macros = $xmlResponse.Command.MacroGetResult.Macro | ForEach-Object { $_.Name }
         if ($macros.Count -gt 0) {
-            $message = "The following macros were found on ${endpointIp}: $($macros -join ', ')"
+            $message = "The following macros were found on ${endpointIp} ($systemName): $($macros -join ', ')"
         } else {
-            $message = "No macros found on ${endpointIp}."
+            $message = "No macros found on ${endpointIp} ($systemName)."
         }
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     } catch {
         $errorDetails = $_.Exception.Message
-        $message = "Error getting macros from ${endpointIp}. Response: $errorDetails"
+        $message = "Error getting macros from ${endpointIp} ($systemName). Response: $errorDetails"
         Display-Message $message
         Log-Message -message $message -logFile $logFile
     }
@@ -112,9 +113,10 @@ function Get-Macros {
 
 # Perform the check
 foreach ($system in $systems) {
+    $systemName = $system.'system name'
     $ipAddress = $system.'ip address'
     $username = $system.'username'
     $password = $system.'password'
 
-    Get-Macros -endpointIp $ipAddress -username $username -password $password -logFile $logFile
+    Get-Macros -endpointIp $ipAddress -username $username -password $password -logFile $logFile -systemName $systemName
 }

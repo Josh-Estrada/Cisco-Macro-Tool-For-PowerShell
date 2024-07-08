@@ -1,4 +1,4 @@
-# Ignore SSL certificate validation
+# Ignore SSL certificate validation to avoid errors
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 # Function to prompt user for file paths
