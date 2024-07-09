@@ -44,9 +44,9 @@ $nonMatchingSystems = 0
 
 foreach ($system in $systems) {
     $systemName = $system.'system name'.Replace(" ", "")
-    $matchingZipFiles = $zipFiles | Where-Object { $_.Name -like "$systemName-otj-macro-latest*.zip" }
+    $matchingZipFiles = $zipFiles | Where-Object { $_.Name -like "*$($systemName.ToLower())*-otj-macro-latest*.zip" }
     if ($matchingZipFiles.Count -gt 0) {
-        $matchingSystems += [PSCustomObject]@{ SystemName = $systemName; IPAddress = $system.'ip address'; Username = $system.'username'; Password = $system.'password'; ZipFile = $matchingZipFiles }
+        $matchingSystems += [PSCustomObject]@{ SystemName = $system.'system name'; IPAddress = $system.'ip address'; Username = $system.'username'; Password = $system.'password'; ZipFile = $matchingZipFiles }
     } else {
         $nonMatchingSystems++
     }
