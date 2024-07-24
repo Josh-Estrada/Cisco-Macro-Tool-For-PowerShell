@@ -8,6 +8,7 @@ The Cisco Macro Tool For PowerShell is a script-based tool designed to manage ma
 - Upload Pexip OTJ macros: Upload and manage Pexip OTJ macros from ZIP files.
 - Upload .js macros: Upload and manage macros from .js files.
 - Remove macros: Remove specified macros from Cisco systems.
+- Remove UI Extensions: Remove specified UI Extension Panels from Cisco systems
 - Check macros on a specific system: Verify the macros currently installed on a single system.
 - Check macros on all systems: Verify the macros currently installed across all systems.
 
@@ -102,7 +103,19 @@ Enter the path to your CSV file. The tool will display the list of installed mac
 - Each function generates a log file in the same directory as the script. The log files contain detailed information about the operations performed, including 
   successful and failed attempts.
 
-## 6. Exit
+## 6. Remove UI Extensions
+Enter the path to your CSV file and specify the macros to remove (comma-separated). Review the number of systems found in the CSV file, and confirm to proceed with the removal.
+
+## How It Works:
+
+- Provide the full path of the completed CSV.
+- Specify the UI Extension Panel IDs to be removed. The Panel ID name must match exactly as it appears on the 
+  systems. Multiple Panel IDs can be provided by using commas.
+- Confirm the removal.
+- The tool iterates through the CSV and removes all specified UI Extension Panels from all systems.
+- Log File: RemoveUIExtensions.log
+
+## 7. Exit
 Exits the Main script and macro tool.
 
 ## Logging
@@ -111,6 +124,7 @@ Exits the Main script and macro tool.
 - RemoveMacros.log: Logs for removing macros.
 - CheckMacrosOnSystem.log: Logs for checking macros on a specific system.
 - CheckMacrosOnAllSystems.log: Logs for checking macros on all systems.
+- RemoveUIExtensions.log: Logs for removing UI Extension Panels.
 
 ## Contributing
 Feel free to submit issues and pull requests to improve the tool.
