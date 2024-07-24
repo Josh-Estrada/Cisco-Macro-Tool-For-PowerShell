@@ -8,8 +8,9 @@ while ($true) {
     Write-Host "3. Remove macros"
     Write-Host "4. Check macros on a specific system"
     Write-Host "5. Check macros on all systems"
-    Write-Host "6. Exit"
-    $option = Read-Host "Enter your choice (1, 2, 3, 4, 5, or 6)"
+    Write-Host "6. Remove UI extensions"
+    Write-Host "7. Exit"
+    $option = Read-Host "Enter your choice (1, 2, 3, 4, 5, 6, or 7)"
 
     switch ($option) {
         "1" {
@@ -28,6 +29,9 @@ while ($true) {
             . .\CheckMacrosOnAllSystems.ps1
         }
         "6" {
+            . .\RemoveUIExtensions.ps1
+        }
+        "7" {
             Write-Host "Exiting..."
             exit
         }
