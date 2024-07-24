@@ -40,7 +40,8 @@ Choose an option:
 3. Remove macros
 4. Check macros on specific system
 5. Check macros on all systems
-6. Exit
+6. Remove UI extensions
+7. Exit
 Enter your choice (1, 2, 3, 4, 5, 6):
 
 ## Detailed Steps
