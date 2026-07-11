@@ -1,0 +1,4 @@
+name,host,username,password
+Conference Room 101,10.0.10.11,admin,SecretPassword1
+Conference Room 102,roomkit-102.example.com,admin,SecretPassword2
+Boardroom,10.0.10.13,,
