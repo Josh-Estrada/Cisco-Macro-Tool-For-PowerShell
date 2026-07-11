@@ -1,5 +1,10 @@
-# PowerShell logs
+# PowerShell logs and run artifacts (contain device names/hosts and,
+# in failed-device retry CSVs, credentials that came from your input CSV)
 *.log
+logs/
+
+# Real device lists (keep only the template in git)
+devices.csv
 
 # PowerShell Studio files
 *.psprojs
